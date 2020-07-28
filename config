@@ -1,0 +1,22 @@
+# KEY=VALUE
+
+IMG_PG=postgres:10
+IMG_SVC=bxwill/qsphere:svc-latest
+IMG_DASHBOARD=bxwill/qsphere:dashboard-latest
+IMG_UI=bxwill/qsphere:ui-latest
+
+PG_SERVER=qsphere-db
+PG_PORT=5432
+PG_DB=qsphere
+PG_USER=postgres
+PG_PASSWORD=password
+PG_VOL=./qsphere-pgdata
+
+SVC_NAME=qsphere-svc
+SVC_PORT=6001
+
+DASHBOARD_NAME=qsphere-dashboard
+DASHBOARD_PORT=3000
+
+UI_NAME=qsphere-ui
+UI_PORT=8080
