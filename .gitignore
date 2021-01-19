@@ -1,1 +1,3 @@
-.qsphere_workspace
+qsphere-db/
+.env
+docker-compose.yaml

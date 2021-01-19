@@ -1,0 +1,237 @@
+#!/bin/bash
+# Author: v.stone@163.com
+
+#set -ex
+
+CTL_OPT=${1-""}
+CTL_ARG=${2-""}
+WORKDIR="$PWD"
+COMPOSE_ENV=".env"
+COMPOSE_YAML="docker-compose.yaml"
+COMPOSE_CMD="docker-compose -f ${COMPOSE_YAML} -p qsphere"
+
+function help_opt
+{
+    cat <<EOF
+$0 <option>
+  config   - Config env to init QSphere
+  start    - Start QSphere application
+  stop     - Stop service (db,svc,board,ui)
+  restart  - Restart service (all,db,svc,board,ui)
+  upgrade  - Upgrade QSphere application
+  down     - Down QSphere application
+  list     - List QSphere services
+EOF
+    exit 1
+}
+
+function help_arg
+{
+    cat <<EOF
+$0 $CTL_OPT <arg>
+  all      - QSphere all services
+  db       - QSphere DB (PostgreSQL)
+  svc      - QSphere Service (Flask Service)
+  board    - QSphere Dashboard (Grafana)
+  ui       - QSphere UI
+EOF
+    exit 1
+}
+
+function check_env
+{
+    output=$(which docker docker-compose) || {
+        echo -e "${output}"
+        exit 1
+    }
+    return 0
+}
+
+function generate_compose_yaml
+{
+    cat <<EOF
+version: "3"
+services:
+  qsphere-db:
+    container_name: qsphere-db
+    image: \${DB_IMG}
+    restart: always
+    networks:
+      - qsphere
+    environment:
+      POSTGRES_DB: \${PG_NAME}
+      POSTGRES_PASSWORD: \${PG_PASS}
+    volumes:
+      - \${DB_VOL}:/var/lib/postgresql/data
+    command: ["-c", "max_connections=2000"]
+  qsphere-svc:
+    container_name: qsphere-svc
+    image: \${SVC_IMG}
+    restart: always
+    networks:
+      - qsphere
+    ports:
+      - 6001:6001
+    environment:
+      PG_NAME: \${PG_NAME}
+      PG_HOST: \${PG_HOST}
+      PG_PORT: \${PG_PORT}
+      PG_USER: \${PG_USER}
+      PG_PASS: \${PG_PASS}
+    depends_on:
+      - qsphere-db
+  qsphere-board:
+    container_name: qsphere-board
+    image: \${BOARD_IMG}
+    restart: always
+    networks:
+      - qsphere
+    ports:
+      - 3000:3000
+    environment:
+      PG_NAME: \${PG_NAME}
+      PG_HOST: \${PG_HOST}
+      PG_PORT: \${PG_PORT}
+      PG_USER: \${PG_USER}
+      PG_PASS: \${PG_PASS}
+    depends_on:
+      - qsphere-db
+  qsphere-ui:
+    container_name: qsphere-ui
+    image: \${UI_IMG}
+    restart: always
+    networks:
+      - qsphere
+    ports:
+      - \${UI_PORT}:80
+    depends_on:
+      - qsphere-svc
+      - qsphere-board
+networks:
+  qsphere:
+    driver: bridge
+EOF
+}
+
+function generate_compose_env
+{
+    cat <<EOF
+DB_IMG=postgres:10
+DB_VOL=./qsphere-db/data
+PG_NAME=qsphere
+PG_HOST=qsphere-db
+PG_PORT=5432
+PG_USER=postgres
+PG_PASS=password
+
+SVC_IMG=bxwill/qsphere:svc-latest
+
+BOARD_IMG=bxwill/qsphere:dashboard-latest
+
+UI_IMG=bxwill/qsphere:ui-latest
+UI_PORT=80
+EOF
+}
+
+function ctl_config
+{
+    [[ -f ${COMPOSE_ENV} ]] || generate_compose_env > ${COMPOSE_ENV}
+    [[ -f ${COMPOSE_YAML} ]] || generate_compose_yaml > ${COMPOSE_YAML}
+    vi $COMPOSE_ENV
+}
+
+function check_config
+{
+    [[ -f $COMPOSE_ENV ]] || {
+        echo -e "There is no env config in your host, try to run '$0 config' at first time."
+        exit 1
+    }
+    [[ -f $COMPOSE_YAML ]] || {
+        echo -e "There is no compose yaml in your host, try to run '$0 config' at first time."
+        exit 1
+    }
+    return 0
+}
+
+function ctl_list
+{
+    check_config
+    ${COMPOSE_CMD} ps
+    return 0
+}
+
+function ctl_start
+{
+    check_config
+    if [[ -z "${CTL_ARG}" ]]; then
+        ${COMPOSE_CMD} up -d
+    else
+        ${COMPOSE_CMD} up -d qsphere-${CTL_ARG}
+    fi
+    ${COMPOSE_CMD} ps
+    return 0
+}
+
+function ctl_stop
+{
+    check_config
+    echo ",db,svc,board,ui," | grep -q ",${CTL_ARG},"
+    if (( $? == 0 )); then
+        ${COMPOSE_CMD} stop qsphere-${CTL_ARG}
+    else
+        help_arg
+    fi
+    ${COMPOSE_CMD} ps
+    return 0
+}
+
+function ctl_restart
+{
+    check_config
+    echo ",db,svc,board,ui," | grep -q ",${CTL_ARG},"
+    if (( $? == 0 )); then
+        ${COMPOSE_CMD} restart qsphere-${CTL_ARG}
+    elif [[ "${CTL_ARG}" == "all" ]]; then
+        ${COMPOSE_CMD} restart
+    else
+        help_arg
+    fi
+    ${COMPOSE_CMD} ps
+    return 0
+}
+
+function ctl_upgrade
+{
+    check_config
+    ${COMPOSE_CMD} pull
+    ${COMPOSE_CMD} up -d
+    ${COMPOSE_CMD} ps
+    return 0
+}
+
+function ctl_down
+{
+    check_config
+    ${COMPOSE_CMD} down
+    return 0
+}
+
+# Main
+check_env
+if [[ "${CTL_OPT}" == "list" ]]; then
+    ctl_list
+elif [[ "${CTL_OPT}" == "config" ]]; then
+    ctl_config
+elif [[ "${CTL_OPT}" == "start" ]]; then
+    ctl_start
+elif [[ "${CTL_OPT}" == "stop" ]]; then
+    ctl_stop
+elif [[ "${CTL_OPT}" == "restart" ]]; then
+    ctl_restart
+elif [[ "${CTL_OPT}" == "upgrade" ]]; then
+    ctl_upgrade
+elif [[ "${CTL_OPT}" == "down" ]]; then
+    ctl_down
+else
+    help_opt
+fi
