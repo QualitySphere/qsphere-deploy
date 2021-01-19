@@ -71,7 +71,7 @@ services:
     networks:
       - qsphere
     ports:
-      - 6001:6001
+      - 6001:80
     environment:
       PG_NAME: \${PG_NAME}
       PG_HOST: \${PG_HOST}
