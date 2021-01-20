@@ -18,7 +18,7 @@ $0 <option>
   start    - Start QSphere application
   stop     - Stop service (db,svc,board,ui)
   restart  - Restart service (all,db,svc,board,ui)
-  upgrade  - Upgrade QSphere application
+  upgrade  - Upgrade service (all,db,svc,board,ui)
   down     - Down QSphere application
   list     - List QSphere services
 EOF
@@ -199,8 +199,16 @@ function ctl_restart
 function ctl_upgrade
 {
     check_config
-    ${COMPOSE_CMD} pull
-    ${COMPOSE_CMD} up -d
+    echo ",db,svc,board,ui," | grep -q ",${CTL_ARG},"
+    if (( $? == 0 )); then
+        ${COMPOSE_CMD} pull qsphere-${CTL_ARG}
+        ${COMPOSE_CMD} up -d qsphere-${CTL_ARG}
+    elif [[ "${CTL_ARG}" == "all" ]]; then
+        ${COMPOSE_CMD} pull
+        ${COMPOSE_CMD} up -d
+    else
+        help_arg
+    fi
     ${COMPOSE_CMD} ps
     return 0
 }

@@ -6,11 +6,11 @@ run `./qsctl`
   start    - Start QSphere application
   stop     - Stop service (db,svc,board,ui)
   restart  - Restart service (all,db,svc,board,ui)
-  upgrade  - Upgrade QSphere application
+  upgrade  - Upgrade service (all,db,svc,board,ui)
   down     - Down QSphere application
   list     - List QSphere services
 ```
 
 ## What is QSphere
 
-[QSphere Web Site](https://qualitysphere.github.io)
+[QSphere Homepage](https://qualitysphere.github.io)
