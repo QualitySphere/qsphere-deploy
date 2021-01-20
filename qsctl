@@ -70,8 +70,6 @@ services:
     restart: always
     networks:
       - qsphere
-    ports:
-      - 6001:80
     environment:
       PG_NAME: \${PG_NAME}
       PG_HOST: \${PG_HOST}
@@ -86,8 +84,6 @@ services:
     restart: always
     networks:
       - qsphere
-    ports:
-      - 3000:3000
     environment:
       PG_NAME: \${PG_NAME}
       PG_HOST: \${PG_HOST}
@@ -126,7 +122,7 @@ PG_PASS=password
 
 SVC_IMG=bxwill/qsphere:svc-latest
 
-BOARD_IMG=bxwill/qsphere:dashboard-latest
+BOARD_IMG=bxwill/qsphere:board-latest
 
 UI_IMG=bxwill/qsphere:ui-latest
 UI_PORT=80
