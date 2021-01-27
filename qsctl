@@ -21,15 +21,28 @@ $0 <option>
   upgrade  - Upgrade service (all,db,svc,board,ui)
   down     - Down QSphere application
   list     - List QSphere services
+  logs     - Check service (all,db,svc,board,ui) logs
 EOF
     exit 1
 }
 
-function help_arg
+function help_all_arg
 {
     cat <<EOF
 $0 $CTL_OPT <arg>
   all      - QSphere all services
+  db       - QSphere DB (PostgreSQL)
+  svc      - QSphere Service (Flask Service)
+  board    - QSphere Dashboard (Grafana)
+  ui       - QSphere UI
+EOF
+    exit 1
+}
+
+function help_svc_arg
+{
+    cat <<EOF
+$0 $CTL_OPT <arg>
   db       - QSphere DB (PostgreSQL)
   svc      - QSphere Service (Flask Service)
   board    - QSphere Dashboard (Grafana)
@@ -175,7 +188,7 @@ function ctl_stop
     if (( $? == 0 )); then
         ${COMPOSE_CMD} stop qsphere-${CTL_ARG}
     else
-        help_arg
+        help_svc_arg
     fi
     ${COMPOSE_CMD} ps
     return 0
@@ -190,7 +203,7 @@ function ctl_restart
     elif [[ "${CTL_ARG}" == "all" ]]; then
         ${COMPOSE_CMD} restart
     else
-        help_arg
+        help_all_arg
     fi
     ${COMPOSE_CMD} ps
     return 0
@@ -207,7 +220,7 @@ function ctl_upgrade
         ${COMPOSE_CMD} pull
         ${COMPOSE_CMD} up -d
     else
-        help_arg
+        help_all_arg
     fi
     ${COMPOSE_CMD} ps
     return 0
@@ -217,6 +230,20 @@ function ctl_down
 {
     check_config
     ${COMPOSE_CMD} down
+    return 0
+}
+
+function ctl_logs
+{
+    check_config
+    echo ",db,svc,board,ui," | grep -q ",${CTL_ARG},"
+    if (( $? == 0 )); then
+        ${COMPOSE_CMD} logs -f qsphere-${CTL_ARG}
+    elif [[ "${CTL_ARG}" == "all" ]]; then
+        ${COMPOSE_CMD} logs -f 
+    else
+        help_all_arg
+    fi
     return 0
 }
 
@@ -236,6 +263,8 @@ elif [[ "${CTL_OPT}" == "upgrade" ]]; then
     ctl_upgrade
 elif [[ "${CTL_OPT}" == "down" ]]; then
     ctl_down
+elif [[ "${CTL_OPT}" == "logs" ]]; then
+    ctl_logs
 else
     help_opt
 fi
