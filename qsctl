@@ -238,9 +238,9 @@ function ctl_logs
     check_config
     echo ",db,svc,board,ui," | grep -q ",${CTL_ARG},"
     if (( $? == 0 )); then
-        ${COMPOSE_CMD} logs -f qsphere-${CTL_ARG}
+        ${COMPOSE_CMD} logs -f qsphere-${CTL_ARG} | grep -v '/api/status'
     elif [[ "${CTL_ARG}" == "all" ]]; then
-        ${COMPOSE_CMD} logs -f 
+        ${COMPOSE_CMD} logs -f | grep -v '/api/status'
     else
         help_all_arg
     fi
