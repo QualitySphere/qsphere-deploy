@@ -79,7 +79,7 @@ services:
     command: ["-c", "max_connections=2000"]
   qsphere-svc:
     container_name: qsphere-svc
-    image: \${SVC_IMG}
+    image: \${QS_REGISTRY}:svc-\${QS_VER}
     restart: always
     networks:
       - qsphere
@@ -89,13 +89,15 @@ services:
       PG_PORT: \${PG_PORT}
       PG_USER: \${PG_USER}
       PG_PASS: \${PG_PASS}
+      QS_USER: \${QS_USER}
+      QS_PASS: \${QS_PASS}
       LOG_DEBUG: \${LOG_DEBUG}
       AUTO_SYNC: \${AUTO_SYNC}
     depends_on:
       - qsphere-db
   qsphere-board:
     container_name: qsphere-board
-    image: \${BOARD_IMG}
+    image: \${QS_REGISTRY}:board-\${QS_VER}
     restart: always
     networks:
       - qsphere
@@ -109,12 +111,12 @@ services:
       - qsphere-db
   qsphere-ui:
     container_name: qsphere-ui
-    image: \${UI_IMG}
+    image: \${QS_REGISTRY}:ui-\${QS_VER}
     restart: always
     networks:
       - qsphere
     ports:
-      - \${UI_PORT}:80
+      - \${QS_PORT}:80
     depends_on:
       - qsphere-svc
       - qsphere-board
@@ -122,6 +124,7 @@ networks:
   qsphere:
     driver: bridge
 EOF
+    return 0
 }
 
 function generate_compose_env
@@ -135,16 +138,16 @@ PG_PORT=5432
 PG_USER=postgres
 PG_PASS=password
 
-SVC_IMG=bxwill/qsphere:svc-latest
-
-BOARD_IMG=bxwill/qsphere:board-latest
-
-UI_IMG=bxwill/qsphere:ui-latest
-UI_PORT=80
+QS_REGISTRY=bxwill/qsphere
+QS_VER=latest
+QS_PORT=80
+QS_USER=admin
+QS_PASS=password
 
 LOG_DEBUG=false
 AUTO_SYNC=true
 EOF
+    return 0
 }
 
 function ctl_config
